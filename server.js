@@ -271,11 +271,11 @@ fastify.post('/addProduct', (req, res) => {
   return product.addP(data)
 })
 
-fastify.get('/getTripleBanner', (req, res) => {
+fastify.get('template/getTripleBanner', (req, res) => {
   const template = new Template()
   return template.getTripleBanners(req.query)
 })
-fastify.get('/getTripleBannerItems/:seo', (req, res) => {
+fastify.get('template/getTripleBannerItems/:seo', (req, res) => {
   const template = new Template()
   let filter = req.query ? req.query : []
 
@@ -285,7 +285,7 @@ fastify.get('/getTripleBannerItems/:seo', (req, res) => {
   return results
 
 })
-fastify.post('/updateTripleBanner', (req, res) => {
+fastify.post('template/updateTripleBanner', (req, res) => {
   const template = new Template()
   const data = req.body
   return template.updateTripleBanner(data)
