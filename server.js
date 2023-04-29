@@ -298,6 +298,16 @@ fastify.post('/template/updateTripleBanner', (req, res) => {
   const data = req.body
   return template.updateTripleBanner(data)
 })
+fastify.get('/template/getSixBanners', (req, res) => {
+  const template = new Template();
+  const results = template.getSixBanners(req.query)
+  return results
+})
+fastify.post('/template/updateSixBanner', (req, res) => {
+  const template = new Template();
+  const body = req.body
+  return template.updateSixBanner(body)
+})
 
 // Run the server!
 fastify.listen({ port: 27015, host: '0.0.0.0' }, function (err, address) {

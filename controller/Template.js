@@ -1,7 +1,7 @@
 const TemplateModel = require('../model/TemplateModel')
 
 module.exports = class Template extends TemplateModel {
-  async getHomePageCategories(){
+  async getHomePageCategories() {
     return this.getCategories();
   }
   async getExtraPages() {
@@ -296,4 +296,45 @@ module.exports = class Template extends TemplateModel {
     const results = await this.getTripleBannerItem(body)
     return results
   }
+  async getSixBanners(body) {
+    let sbanner_id = body.sbanner_id ? body.sbanner_id : 0
+    const results = await this.getSixBanner(sbanner_id)
+    return results
+  }
+  async updateSixBanner(body) {
+
+    if (!body.sbanner_id) {
+      return {
+        error: true,
+        response: 'Banner id alanı zorunludur'
+      }
+    }
+    if (!body.banner) {
+      return {
+        error: true,
+        response: 'Banner resmi zorunludur'
+      }
+    }
+    if (!body.link) {
+      return {
+        error: true,
+        response: 'Link alanı zorunludur'
+      }
+    }
+    const result = await this.updateOneSixBanner(body)
+    if (result) {
+      return {
+        error: false,
+        response: 'Banner güncellendi'
+      }
+    }
+    return {
+      error: true,
+      response: 'Banner güncellenemedi'
+    }
+  }
+
+
+
+
 }
