@@ -1,6 +1,9 @@
 const TemplateModel = require('../model/TemplateModel')
 
 module.exports = class Template extends TemplateModel {
+  async getHomePageCategories(){
+    return this.getCategories();
+  }
   async getExtraPages() {
     const results = await this.extraPages()
 
@@ -19,6 +22,7 @@ module.exports = class Template extends TemplateModel {
       }
     ]
   }
+
   async getExtrasSpecials(query = []) {
     const limit = query.limit ? parseInt(query.limit) : 20
     const page = query.page ? parseInt(query.page) : 1
