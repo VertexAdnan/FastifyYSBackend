@@ -8,6 +8,7 @@ const category = require('./controller/Categories')
 const manufacturers = require('./controller/Manufacturers')
 const sellers = require('./controller/Sellers')
 const template = require('./controller/Template')
+const Template = require('./controller/Template')
 
 // Declare a route
 fastify.get('/', function (request, reply) {
@@ -268,6 +269,26 @@ fastify.post('/addProduct', (req, res) => {
   const product = new getProduct()
 
   return product.addP(data)
+})
+
+fastify.get('/getTripleBanner', (req, res) => {
+  const template = new Template()
+  return template.getTripleBanners(req.query)
+})
+fastify.get('/getTripleBannerItems/:seo', (req, res) => {
+  const template = new Template()
+  let filter = req.query ? req.query : []
+
+  filter.seo = req.params.seo
+
+  const results = template.getTripleBannerItems(filter)
+  return results
+
+})
+fastify.post('/updateTripleBanner', (req, res) => {
+  const template = new Template()
+  const data = req.body
+  return template.updateTripleBanner(data)
 })
 
 // Run the server!

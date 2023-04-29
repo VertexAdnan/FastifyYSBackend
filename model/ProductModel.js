@@ -10,28 +10,41 @@ const {
 } = require('../helper/String')
 
 module.exports = class ProductModel {
-  async getProductDiscounted (start = 0, limit = 20) {
+  async getProductDiscounted(start = 0, limit = 20) {
     let sql = `SELECT product_id FROM ys_product WHERE special > 0 AND status = 1 LIMIT ${start}, ${limit}`
     return await query(sql)
   }
-  async getProductQuestions (product_id) {
+  async getProductQuestions(product_id) {
     let sql = `SELECT q.*, m.*, CONCAT(c.firstname, ' ', c.lastname) as customer FROM ys_qa q LEFT JOIN ys_qa_messages m ON m.qa_id = q.qa_id LEFT JOIN oc_customer c ON c.customer_id = q.customer_id WHERE q.product_id = ${product_id}`
 
     const results = await query(sql)
 
     return results
   }
-  async getProductViewed (start = 0, limit = 20) {
+  async getProductViewed(start = 0, limit = 20) {
     let sql = `SELECT product_id FROM ys_product ORDER BY viewed DESC LIMIT ${start}, ${limit}`
 
     return await query(sql)
   }
-  async getProductBySold (start = 0, limit = 20) {
+  async getProductBySold(start = 0, limit = 20) {
     let sql = `SELECT product_id FROM ys_product ORDER BY soldcount DESC LIMIT ${start}, ${limit}`
 
     return await query(sql)
   }
-  async getReviewsAll (product_id) {
+  async getProductFreeShipping(start = 0, limit = 20) {
+    let sql = "SELECT IFNULL(" +
+      "(SELECT `price` FROM `ys_shippment_ranges` sr WHERE sr.`type` = 'total' and (p.`price` BETWEEN sr.`from` AND sr.`to`) AND sr.seller_id = p.seller_id LIMIT 1)," +
+      " (SELECT `price` FROM `ys_shippment_ranges` sr WHERE sr.`type` = 'weight' and (p.`weight` BETWEEN sr.`from` AND sr.`to`) AND sr.seller_id = p.seller_id LIMIT 1)" +
+      ") as shipping,product_id FROM ys_product p " +
+      `HAVING shipping IS NULL OR shipping = 0 LIMIT ${start},${limit}`;
+    let results = await query(sql)
+    let pids = []
+    results.map((val) => {
+      pids.push({ product_id: val.product_id })
+    })
+    return pids
+  }
+  async getReviewsAll(product_id) {
     let sql = `SELECT
     pr.*,
     CONCAT( c.firstname, ' ', c.lastname ) AS customer,
@@ -49,7 +62,7 @@ module.exports = class ProductModel {
 
     return await query(sql)
   }
-  async getProducts (filter = []) {
+  async getProducts(filter = []) {
     if (!filter['limit']) {
       filter['limit'] = 20
     }
@@ -76,7 +89,7 @@ module.exports = class ProductModel {
       sql += ` AND c.category_id = ${filter['category']}`
     }
 
-    if (filter['category_ids']) {
+    if (filter['category_ids'] && !filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
     }
 
@@ -84,7 +97,7 @@ module.exports = class ProductModel {
       sql += ` AND cp.path_id IN (${filter['path']})`
     }
 
-    if (filter['manufacturer']) {
+    if (filter['manufacturer'] && !filter['categoryOrManufcaturer']) {
       sql += ` AND p.manufacturer_id IN (${filter['manufacturer']})`
     }
 
@@ -99,9 +112,15 @@ module.exports = class ProductModel {
     if (filter['name']) {
       sql += ` AND pd.name LIKE '%${escape(filter['name'])}'`
     }
+    if (filter['mpn']) {
+      sql += ` AND p.mpn = 1`;
+    }
+    if (filter['categoryOrManufcaturer']) {
+      sql += ` AND c.category_id IN(${filter['category_ids']})`
+      sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
+    }
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
-
     const results = await query(sql)
     let output = []
 
@@ -128,7 +147,7 @@ module.exports = class ProductModel {
     return output
   }
 
-  async getProduct (param) {
+  async getProduct(param) {
     let sql = `SELECT p.product_id, p.sku, cd.category_id, p.status, ps.title as status_name, 
     ck.cargokey, ck.title as shipping_cargo, pd.name, p.price, p.special, 
     p.seller_id, p.tax_rate, p.weight, s.company as seller, s.seo as seller_seo, 
@@ -156,7 +175,7 @@ module.exports = class ProductModel {
     return results
   }
 
-  async getOptions (product_id) {
+  async getOptions(product_id) {
     let sql = `SELECT *, ov.name as option_value FROM ys_product_sku sku
     LEFT JOIN ys_sku_option sko ON sko.sku_id = sku.sku_id
     LEFT JOIN ys_option_value ov ON ov.option_value_id = sko.option_value_id
@@ -169,7 +188,7 @@ module.exports = class ProductModel {
     return results
   }
 
-  async getImages (product_id) {
+  async getImages(product_id) {
     let sql = `SELECT * FROM oc_product_image WHERE product_id = ${product_id}`
 
     const results = await query(sql)

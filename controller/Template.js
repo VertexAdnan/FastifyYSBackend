@@ -1,7 +1,7 @@
 const TemplateModel = require('../model/TemplateModel')
 
 module.exports = class Template extends TemplateModel {
-  async getExtraPages () {
+  async getExtraPages() {
     const results = await this.extraPages()
 
     return [
@@ -19,7 +19,7 @@ module.exports = class Template extends TemplateModel {
       }
     ]
   }
-  async getExtrasSpecials (query = []) {
+  async getExtrasSpecials(query = []) {
     const limit = query.limit ? parseInt(query.limit) : 20
     const page = query.page ? parseInt(query.page) : 1
     const start = (page - 1) * limit
@@ -29,15 +29,15 @@ module.exports = class Template extends TemplateModel {
       start: start
     })
   }
-  async getExtrasShippingFree (query) {
+  async getExtrasShippingFree(query) {
     return this.extrasShippingFree(query)
   }
-  async smileInBasket (body) {
+  async smileInBasket(body) {
     const results = await this.getSmileInBasket(body)
 
     return results
   }
-  async addItemsSmileInBasket (body) {
+  async addItemsSmileInBasket(body) {
     if (!body.extra_id)
       return {
         error: true,
@@ -82,7 +82,7 @@ module.exports = class Template extends TemplateModel {
     }
   }
 
-  async addItemsExtra (body) {
+  async addItemsExtra(body) {
     if (!body.extra_id)
       return {
         error: true,
@@ -120,14 +120,14 @@ module.exports = class Template extends TemplateModel {
       response: 'Başarılı'
     }
   }
-  async removeItemExtra (item_id) {
+  async removeItemExtra(item_id) {
     const remove = await this.removeExtraItem(item_id)
     return {
       error: false,
       response: 'Başarılı'
     }
   }
-  async ysExtra (query) {
+  async ysExtra(query) {
     const limit = query.limit ? parseInt(query.limit) : 20
     const page = query.page ? parseInt(query.page) : 1
     const start = (page - 1) * limit
@@ -139,7 +139,7 @@ module.exports = class Template extends TemplateModel {
 
     return this.getExtraPage()
   }
-  async getSpecialPageData (query) {
+  async getSpecialPageData(query) {
     const results = this.getSpecialPage({
       page_id: query,
       link: query
@@ -148,7 +148,7 @@ module.exports = class Template extends TemplateModel {
     return results
   }
 
-  async updateTitle (body) {
+  async updateTitle(body) {
     if (!body.title_id)
       return {
         error: true,
@@ -177,7 +177,7 @@ module.exports = class Template extends TemplateModel {
       response: 'Başarılı'
     }
   }
-  async getTitles (query) {
+  async getTitles(query) {
     const title_id = query.title_id ? parseInt(query.title_id) : 0
 
     const results = await this.getSliderTitles(title_id)
@@ -185,7 +185,7 @@ module.exports = class Template extends TemplateModel {
     return results
   }
 
-  async sliders (query) {
+  async sliders(query) {
     const title_id = query.title_id ? parseInt(query.title_id) : 0
     const slider_id = query.slider_id ? parseInt(query.slider_id) : 0
     const status = query.status ? parseInt(query.status) : 1
@@ -206,7 +206,7 @@ module.exports = class Template extends TemplateModel {
     return results
   }
 
-  async updateSliders (body) {
+  async updateSliders(body) {
     if (!body.slider_id)
       return {
         error: true,
@@ -255,5 +255,41 @@ module.exports = class Template extends TemplateModel {
       error: false,
       response: 'Başarıyla güncellendi!'
     }
+  }
+
+  async updateTripleBanner(body) {
+    if (!body.tbanner_id) {
+      return {
+        error: true,
+        response: 'Banner id alanı zorunludur'
+      }
+    }
+    const update = await this.updateOneTripleBanner(body)
+    if (update) {
+      return {
+        error: false,
+        response: 'Banner bilgisi güncellendi'
+      }
+    }
+    return {
+      error: false,
+      response: 'Banner bilgisi güncellenemedi'
+    }
+
+  }
+  async getTripleBanners(body) {
+    let tbanner_id = body.tbanner_id ? body.tbanner_id : 0
+    return await this.getTripleBanner(tbanner_id)
+  }
+  async getTripleBannerItems(body) {
+    if (!body.seo) {
+      return {
+        error: true,
+        response: 'Banner seo alanı zorunludur'
+      }
+    }
+
+    const results = await this.getTripleBannerItem(body)
+    return results
   }
 }
