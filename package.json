@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "start": "nodemon server"
+  },
+  "dependencies": {
+    "fastify": "^4.15.0",
+    "moment-timezone": "^0.5.43",
+    "mysql-await": "^2.2.3",
+    "nodemon": "^2.0.22",
+    "sqlstring": "^2.3.3"
+  }
+}
