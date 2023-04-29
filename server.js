@@ -16,6 +16,14 @@ fastify.get('/', function (request, reply) {
 })
 
 // TEMPLATE ROUTES
+fastify.get('/template/getHomeCategories', async (req, res) => {
+  const Template = new template()
+
+  const results = await Template.getHomePageCategories();
+
+  return results
+})
+
 fastify.get('/template/extrasBanners', async (req, res) => {
   const Template = new template()
 
