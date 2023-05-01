@@ -7,9 +7,10 @@ const {
   removeTags
 } = require('../helper/String')
 const ProductModel = require('../model/ProductModel')
+const CategoryModel = require('../model/CategoriesModel')
 
 module.exports = class Product extends ProductModel {
-  async getProductReviews (product_id) {
+  async getProductReviews(product_id) {
     const results = await this.getReviewsAll(product_id)
 
     let data = []
@@ -25,7 +26,7 @@ module.exports = class Product extends ProductModel {
       return `${first}**** ${second}****`
     }
 
-    if(!results) return []
+    if (!results) return []
 
     results.map(val => {
       data.push({
@@ -47,7 +48,7 @@ module.exports = class Product extends ProductModel {
     return data
   }
 
-  async getQuestions (product_id) {
+  async getQuestions(product_id) {
     const results = await this.getProductQuestions(product_id)
     let data = []
 
@@ -80,7 +81,7 @@ module.exports = class Product extends ProductModel {
     return data
   }
 
-  async getProductsMisc (type, page = 1, limit = 20) {
+  async getProductsMisc(type, page = 1, limit = 20) {
     const start = (page - 1) * limit
     let ids = []
     let product_ids = ''
@@ -137,7 +138,7 @@ module.exports = class Product extends ProductModel {
       response: returnData
     }
   }
-  async getP (query = []) {
+  async getP(query = []) {
     let filter = []
 
     filter['limit'] = query.limit ? parseInt(query.limit) : 20
@@ -167,35 +168,36 @@ module.exports = class Product extends ProductModel {
     }
 
     const products = await this.getProducts(filter)
-/*
-    let results = []
-
-    products.map(val => {
-      results.push({
-        product_id: parseInt(val.product_id),
-        name: val.name,
-        price: parseFloat(val.price),
-        special: parseFloat(val.special),
-        discountRate: discountRate(val.price, val.special),
-        image: generateImage(val.image),
-        mpn: parseInt(val.mpn),
-        rating: val.rating ? parseInt(val.rating) : 0,
-        ratingCount: val.ratingCount ? parseInt(val.ratingCount) : 0,
-        category_id: parseInt(val.category_id),
-        category: val.category,
-        manufacturer_id: val.manufacturer_id,
-        manufacturer: val.manufacturer,
-        seller_id: val.seller_id,
-        seller: val.company,
-        href: val.product_seo
-      })
-    })
-*/
+    /*
+        let results = []
+    
+        products.map(val => {
+          results.push({
+            product_id: parseInt(val.product_id),
+            name: val.name,
+            price: parseFloat(val.price),
+            special: parseFloat(val.special),
+            discountRate: discountRate(val.price, val.special),
+            image: generateImage(val.image),
+            mpn: parseInt(val.mpn),
+            rating: val.rating ? parseInt(val.rating) : 0,
+            ratingCount: val.ratingCount ? parseInt(val.ratingCount) : 0,
+            category_id: parseInt(val.category_id),
+            category: val.category,
+            manufacturer_id: val.manufacturer_id,
+            manufacturer: val.manufacturer,
+            seller_id: val.seller_id,
+            seller: val.company,
+            href: val.product_seo
+          })
+        })
+    */
     return {
       products: products
     }
   }
-  async getProd (param) {
+  async getProd(param) {
+
     let data = await this.getProduct(param)
 
     if (data && data[0]) {
@@ -259,7 +261,54 @@ module.exports = class Product extends ProductModel {
       response: 'Ürün bulunamadı'
     }
   }
-  addP (data) {
+  async getProdForAdmin(query = []) {
+    let filter = []
+
+    filter['limit'] = query.limit ? parseInt(query.limit) : 20
+    query.page = query.page ? query.page : 1
+    if (query.page) {
+      filter['start'] = (query.page - 1) * filter['limit']
+    }
+
+    if (query.quantity) {
+      filter['quantity'] = parseInt(query.quantity)
+    }
+
+    if (query.fc) {
+      filter['category'] = parseIds(query.fc)
+    }
+
+    if (query.price) {
+      filter['price'] = parseInt(query.price)
+    }
+
+    if (query.name) {
+      filter['name'] = query.name
+    }
+    if (query.sellername) {
+      filter['sellername'] = query.sellername
+    }
+    if (query.status) {
+      filter['status'] = query.status
+    }
+    if (query.seller) {
+      filter['seller'] = parseIds(query.seller)
+    }
+    if (query.image) {
+      filter['image'] = query.image
+    }
+    const products = await this.getProducts(filter)
+    if (products) {
+
+      return { error: false, response: products }
+    }
+    return {
+      error: true,
+      response: 'Ürünler bulunamadı'
+    }
+
+  }
+  addP(data) {
     console.log(`User adds product`)
     const product_name = replace(data.name)
 

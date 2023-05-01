@@ -8,6 +8,7 @@ const {
   discountRate,
   removeTags
 } = require('../helper/String')
+const CategoriesModel = require('./CategoriesModel')
 
 module.exports = class ProductModel {
   async getProductDiscounted(start = 0, limit = 20) {
@@ -75,7 +76,24 @@ module.exports = class ProductModel {
             SELECT AVG(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
         ) as rating,(
             SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
-        ) as total_rating, pd.name, p.price, p.special, p.model, p.sku, p.mpn, p.image, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company, p.product_seo 
+        ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company,ps.title as product_status,
+        (SELECT DISTINCT
+          (
+          SELECT
+              GROUP_CONCAT( cd1.NAME ORDER BY LEVEL SEPARATOR ' > ' ) 
+          FROM
+              oc_category_path cp
+              LEFT JOIN oc_category_description cd1 ON ( cp.path_id = cd1.category_id AND cp.category_id != cp.path_id ) 
+          WHERE
+              cp.category_id = c.category_id 
+          GROUP BY
+              cp.category_id 
+          ) AS path
+      FROM
+          oc_category c
+          LEFT JOIN oc_category_description cd2 ON ( c.category_id = cd2.category_id )
+          LEFT JOIN ys_commission_category cc ON (cc.category_id = c.parent_id )
+          WHERE c.category_id IS NOT NULL AND c.category_id=p.category_id LIMIT 1) as 'category_path'
         FROM ys_product p 
         LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
         LEFT JOIN oc_category_description cd ON p.category_id = cd.category_id
@@ -83,6 +101,7 @@ module.exports = class ProductModel {
         LEFT JOIN oc_manufacturer m ON m.manufacturer_id = p.manufacturer_id
         LEFT JOIN oc_category c ON c.category_id = p.category_id
         LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
+        LEFT JOIN ys_product_status ps ON ps.status_id = p.status
         WHERE p.status = 1`
 
     if (filter['category']) {
@@ -115,6 +134,25 @@ module.exports = class ProductModel {
     if (filter['mpn']) {
       sql += ` AND p.mpn = 1`;
     }
+    if (filter['image']) {
+      if (filter['image'] == 0) {
+        sql += ` AND (p.image IS NULL OR p.image='')`;
+      } else {
+        sql += ` AND (p.image IS NOT NULL OR p.image != '')`
+      }
+    }
+    if ((filter['quantity'])) {
+      sql += ` AND p.quantity=${(filter['quantity'])}`;
+    }
+    if (filter['price']) {
+      sql += ` AND (p.price=${filter['price']} OR p.special=${filter['price']})`;
+    }
+    if (filter['sellername']) {
+      sql += ` AND s.company LIKE '%${escape(filter['sellername'])}%'`;
+    }
+    if (typeof (filter['status']) == "number") {
+      sql += ` AND p.status=${(filter['status'])}`;
+    }
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
@@ -128,15 +166,22 @@ module.exports = class ProductModel {
       output.push({
         product_id: parseInt(val.product_id),
         name: val.name,
+        model: val.model,
         price: parseFloat(val.price),
+        quantity: parseInt(val.quantity),
+        weight: parseInt(val.weight),
         special: parseFloat(val.special),
         discountRate: discountRate(val.price, val.special),
+        product_status: val.product_status,
+        date_added: val.date_added,
+        date_modified: val.date_modified,
         image: generateImage(val.image),
         mpn: parseInt(val.mpn),
         rating: val.rating ? parseInt(val.rating) : 0,
         ratingCount: val.ratingCount ? parseInt(val.ratingCount) : 0,
         category_id: parseInt(val.category_id),
         category: val.category,
+        category_path: val.category_path,
         manufacturer_id: val.manufacturer_id,
         manufacturer: val.manufacturer,
         seller_id: val.seller_id,
@@ -193,5 +238,18 @@ module.exports = class ProductModel {
 
     const results = await query(sql)
     return results
+  }
+  async getProductsForAdmin(filter) {
+    const categoryModel = new CategoriesModel();
+    const products = await this.getProducts(filter)
+    let newProducts = []
+    products.map((val) => {
+      newProducts.push({
+        category_path: categoryModel.getPathList({ category_id: val.category_id })
+      })
+    })
+
+    return products
+
   }
 }
