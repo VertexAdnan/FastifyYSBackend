@@ -156,6 +156,15 @@ module.exports = class ProductModel {
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
+    }if(filter['order']){
+      switch(filter['order']){
+        case 'newest':
+          sql += ' ORDER BY date_added'  
+        break
+        case 'oldest':
+          sql+=' ORDER BY date_added DESC'
+          break
+      }
     }
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
