@@ -9,16 +9,20 @@ module.exports = class Template extends TemplateModel {
 
     return [
       {
-        banner: results[0].banner_1
+        banner: results[0].banner_1,
+        name: 'Yapisepeti Extra',
       },
       {
-        banner: results[0].banner_2
+        banner: results[0].banner_2,
+        name: 'Sepette Güldüren Ürünler',
       },
       {
-        banner: results[0].banner_3
+        banner: results[0].banner_4,
+        name: 'Fırsat',
       },
       {
-        banner: results[0].banner_4
+        banner: results[0].banner_3,
+        name: 'Haftanın Favori Ürünleri',
       }
     ]
   }

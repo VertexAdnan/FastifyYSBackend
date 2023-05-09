@@ -25,6 +25,7 @@ module.exports = class Categories extends CategoriesModel {
         let data = [];
 
         categories.map( (value) => {
+            if(value.category_id)
             data.push({
                 category_id: value.category_id,
                 name: value.name,

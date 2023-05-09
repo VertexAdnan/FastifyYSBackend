@@ -42,6 +42,8 @@ module.exports = class CategoriesModel {
         LEFT JOIN oc_category_description cd2 ON ( c.category_id = cd2.category_id )
         LEFT JOIN ys_commission_category cc ON (cc.category_id = c.parent_id )
         WHERE c.category_id IS NOT NULL
+        AND cd2.name IS NOT NULL
+        AND c.parent_id IS NOT NULL
 `
 
     if (filter['name']) {
