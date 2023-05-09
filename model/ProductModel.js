@@ -72,7 +72,7 @@ module.exports = class ProductModel {
       filter['start'] = 0
     }
 
-    let sql = `SELECT DISTINCT p.product_id, (
+    let sql = `SELECT DISTINCT p.product_id,p.status, (
             SELECT AVG(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
         ) as rating,(
             SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
@@ -102,7 +102,7 @@ module.exports = class ProductModel {
         LEFT JOIN oc_category c ON c.category_id = p.category_id
         LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
         LEFT JOIN ys_product_status ps ON ps.status_id = p.status
-        WHERE p.status = 1`
+        WHERE 1 = 1`
 
     if (filter['category']) {
       sql += ` AND c.category_id = ${filter['category']}`
@@ -150,19 +150,19 @@ module.exports = class ProductModel {
     if (filter['sellername']) {
       sql += ` AND s.company LIKE '%${escape(filter['sellername'])}%'`;
     }
-    if (typeof (filter['status']) == "number") {
+    if (typeof filter['status'] == "number") {
       sql += ` AND p.status=${(filter['status'])}`;
     }
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
-    }if(filter['order']){
-      switch(filter['order']){
+    } if (filter['order']) {
+      switch (filter['order']) {
         case 'newest':
-          sql += ' ORDER BY date_added'  
-        break
+          sql += ' ORDER BY date_added'
+          break
         case 'oldest':
-          sql+=' ORDER BY date_added DESC'
+          sql += ' ORDER BY date_added DESC'
           break
       }
     }
@@ -174,6 +174,7 @@ module.exports = class ProductModel {
     results.map(val => {
       output.push({
         product_id: parseInt(val.product_id),
+        status: parseInt(val.status),
         name: val.name,
         model: val.model,
         price: parseFloat(val.price),
