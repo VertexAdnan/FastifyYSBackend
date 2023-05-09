@@ -159,6 +159,10 @@ fastify.get('/getProducts', async (req, res) => {
 
   return await product.getP(req.query)
 })
+fastify.get('/getProductsAdmin', async (req, res) => {
+  const products = new getProduct()
+  return await products.getProdForAdmin(req.query)
+})
 
 fastify.get('/getProduct/:param', async (req, res) => {
   const product = new getProduct()

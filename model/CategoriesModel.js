@@ -1,7 +1,7 @@
 const { query, escape } = require('../lib/mysql')
 
 module.exports = class CategoriesModel {
-  async getCategories (filter = []) {
+  async getCategories(filter = []) {
     let sql = `SELECT c.category_id, cd.name, cd.seo_url
         FROM oc_category c
         LEFT JOIN oc_category_description cd ON c.category_id = cd.category_id`
@@ -15,14 +15,14 @@ module.exports = class CategoriesModel {
     return await query(sql)
   }
 
-  async getMainMenu () {
+  async getMainMenu() {
     let sql = `SELECT c.category_id, cd.name, cd.seo_url FROM oc_category c
         LEFT JOIN oc_category_description cd ON c.category_id = cd.category_id WHERE c.category_id IN (1073, 1069, 1071, 1072, 1074, 1077, 3508)`
 
     return await query(sql)
   }
 
-  async getPathList (filter = []) {
+  async getPathList(filter = []) {
     let sql = `SELECT DISTINCT
         c.parent_id,
         cc.percent,
@@ -56,7 +56,6 @@ module.exports = class CategoriesModel {
 
     sql += `    ORDER BY c.parent_id ASC
             LIMIT ${filter['start']}, ${filter['limit']}`
-
     return await query(sql)
   }
 }
