@@ -166,6 +166,9 @@ module.exports = class Product extends ProductModel {
     if (query.seller) {
       filter['seller'] = parseIds(query.seller)
     }
+    if(query.status){
+      filter['status']=parseInt(query.status)
+    }
 
     const products = await this.getProducts(filter)
     /*
