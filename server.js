@@ -10,6 +10,29 @@ const sellers = require('./controller/Sellers')
 const template = require('./controller/Template')
 const Template = require('./controller/Template')
 
+fastify.register(require('@fastify/cors'), {
+  hook: 'preHandler',
+  delegator: (req, callback) => {
+    const corsOptions = {
+      // This is NOT recommended for production as it enables reflection exploits
+      origin: true
+    };
+
+    // do not include CORS headers for requests from localhost
+    if (/^localhost$/m.test(req.headers.origin)) {
+      corsOptions.origin = false
+    }   
+    if (/^193.31.116.20$/m.test(req.headers.origin)) {
+      corsOptions.origin = false
+    }
+
+    // callback expects two parameters: error and options
+    callback(null, corsOptions)
+  },
+})
+
+
+
 // Declare a route
 fastify.get('/', function (request, reply) {
   reply.send({ app: true })
@@ -312,6 +335,8 @@ fastify.post('/template/updateSixBanner', (req, res) => {
   const body = req.body
   return template.updateSixBanner(body)
 })
+
+
 
 // Run the server!
 fastify.listen({ port: 27015, host: '0.0.0.0' }, function (err, address) {

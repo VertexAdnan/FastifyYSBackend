@@ -72,37 +72,46 @@ module.exports = class ProductModel {
       filter['start'] = 0
     }
 
-    let sql = `SELECT DISTINCT p.product_id,p.status, (
-            SELECT AVG(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
-        ) as rating,(
-            SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
-        ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company,ps.title as product_status,
-        (SELECT DISTINCT
-          (
-          SELECT
-              GROUP_CONCAT( cd1.NAME ORDER BY LEVEL SEPARATOR ' > ' ) 
-          FROM
-              oc_category_path cp
-              LEFT JOIN oc_category_description cd1 ON ( cp.path_id = cd1.category_id AND cp.category_id != cp.path_id ) 
-          WHERE
-              cp.category_id = c.category_id 
-          GROUP BY
-              cp.category_id 
-          ) AS path
-      FROM
-          oc_category c
-          LEFT JOIN oc_category_description cd2 ON ( c.category_id = cd2.category_id )
-          LEFT JOIN ys_commission_category cc ON (cc.category_id = c.parent_id )
-          WHERE c.category_id IS NOT NULL AND c.category_id=p.category_id LIMIT 1) as 'category_path'
-        FROM ys_product p 
-        LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
-        LEFT JOIN oc_category_description cd ON p.category_id = cd.category_id
-        LEFT JOIN ys_seller s ON s.seller_id = p.seller_id
-        LEFT JOIN oc_manufacturer m ON m.manufacturer_id = p.manufacturer_id
-        LEFT JOIN oc_category c ON c.category_id = p.category_id
-        LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
-        LEFT JOIN ys_product_status ps ON ps.status_id = p.status
-        WHERE 1 = 1`
+    let select = `SELECT DISTINCT p.product_id,pd.name, p.viewed, p.status, (
+      SELECT AVG(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
+  ) as rating,
+  (SELECT COUNT(w.product_id) FROM ys_customer_wishlist w WHERE w.product_id = p.product_id) as wishCount,
+  ${filter['order'] && filter['order'] == 'cartcount' ? `COUNT(wcc.product_id) as cartCount,` : '(SELECT COUNT(ww.product_id) FROM oc_cart ww WHERE ww.product_id = p.product_id) as cartCount,'}
+  ${filter['order'] && filter['order'] == 'wishcount' ? `COUNT(cw.product_id) as wishCount,` : '(SELECT COUNT(w.product_id) FROM ys_customer_wishlist w WHERE w.product_id = p.product_id) as wishCount,'}
+  (
+      SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
+  ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company,ps.title as product_status,
+  (SELECT DISTINCT
+    (
+    SELECT
+        GROUP_CONCAT( cd1.NAME ORDER BY LEVEL SEPARATOR ' > ' ) 
+    FROM
+        oc_category_path cp
+        LEFT JOIN oc_category_description cd1 ON ( cp.path_id = cd1.category_id AND cp.category_id != cp.path_id ) 
+    WHERE
+        cp.category_id = c.category_id 
+    GROUP BY
+        cp.category_id 
+    ) AS path`
+
+    let sql = `${select}
+FROM
+    oc_category c
+    LEFT JOIN oc_category_description cd2 ON ( c.category_id = cd2.category_id )
+    LEFT JOIN ys_commission_category cc ON (cc.category_id = c.parent_id )
+    WHERE c.category_id IS NOT NULL AND c.category_id=p.category_id LIMIT 1) as 'category_path'
+  FROM ys_product p 
+  LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
+  LEFT JOIN oc_category_description cd ON p.category_id = cd.category_id
+  LEFT JOIN ys_seller s ON s.seller_id = p.seller_id
+  LEFT JOIN oc_manufacturer m ON m.manufacturer_id = p.manufacturer_id
+  LEFT JOIN oc_category c ON c.category_id = p.category_id
+  LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
+  LEFT JOIN ys_product_status ps ON ps.status_id = p.status
+  ${filter['order'] && filter['order'] == 'cartcount' ? `LEFT JOIN oc_cart wcc ON ( wcc.product_id = p.product_id)` : ''}
+  ${filter['order'] && filter['order'] == 'wishcount' ? `LEFT JOIN ys_customer_wishlist cw ON ( cw.product_id = p.product_id)` : ''}
+
+  WHERE 1 = 1`
 
     if (filter['category']) {
       sql += ` AND c.category_id = ${filter['category']}`
@@ -150,13 +159,15 @@ module.exports = class ProductModel {
     if (filter['sellername']) {
       sql += ` AND s.company LIKE '%${escape(filter['sellername'])}%'`;
     }
-    if (typeof filter['status'] == "number") {
+    if (filter['status']) {
       sql += ` AND p.status=${(filter['status'])}`;
     }
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
-    } if (filter['order']) {
+    } 
+    
+    if (filter['order']) {
       switch (filter['order']) {
         case 'newest':
           sql += ' ORDER BY date_added'
@@ -164,17 +175,32 @@ module.exports = class ProductModel {
         case 'oldest':
           sql += ' ORDER BY date_added DESC'
           break
+        case 'cartcount':
+          sql += ` ORDER BY cartcount DESC`
+          break
+        case 'wishcount':
+          sql += ` ORDER BY wishCount DESC`
+          break;
+        case 'viewed':
+            sql += ` ORDER BY p.viewed DESC`
+            break;
       }
     }
+    //return {sql: sql}
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
     const results = await query(sql)
     let output = []
+    
+    if(!results) return []
 
     results.map(val => {
       output.push({
         product_id: parseInt(val.product_id),
         status: parseInt(val.status),
+        viewed: parseInt(val.viewed),
+        wishCount: parseInt(val.wishCount),
+        cartCount: parseInt(val.cartCount),
         name: val.name,
         model: val.model,
         price: parseFloat(val.price),
@@ -185,7 +211,7 @@ module.exports = class ProductModel {
         product_status: val.product_status,
         date_added: val.date_added,
         date_modified: val.date_modified,
-        image: generateImage(val.image),
+        image: "https://cdn.yapisepeti.com.tr/image/s_250,enlarge,fit_contain,background_white/wkseller/463/sgs-hi-tech-angle-grinder-avuc-taslama8698619151088-294.jpg",//generateImage(val.image),
         mpn: parseInt(val.mpn),
         rating: val.rating ? parseInt(val.rating) : 0,
         ratingCount: val.ratingCount ? parseInt(val.ratingCount) : 0,

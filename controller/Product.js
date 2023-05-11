@@ -110,7 +110,7 @@ module.exports = class Product extends ProductModel {
       product_ids: product_ids
     })
 
-    let returnData = []
+    /*let returnData = []
 
     products.map(val => {
       returnData.push({
@@ -131,11 +131,11 @@ module.exports = class Product extends ProductModel {
         seller: val.company,
         href: val.product_seo
       })
-    })
+    })*/
 
     return {
       error: false,
-      response: returnData
+      response: products
     }
   }
   async getP(query = []) {
@@ -168,6 +168,9 @@ module.exports = class Product extends ProductModel {
     }
     if(query.status){
       filter['status']=parseInt(query.status)
+    }
+    if(query.order){
+      filter['order'] = query.order
     }
 
     const products = await this.getProducts(filter)
