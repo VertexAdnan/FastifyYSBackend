@@ -13,4 +13,10 @@ module.exports = class ManufacturersModel {
 
         return await query(sql);
     }
+
+    async getManufacturerData(id){
+        let sql = `SELECT name, seo_url, description, seller_id FROM oc_manufacturer WHERE manufacturer_id = ${id}`;
+
+        return await query(sql);
+    }
 }

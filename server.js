@@ -1,3 +1,6 @@
+const os = require("os");
+const cluster = require("cluster");
+
 const fastify = require('fastify')({
   logger: false
 })
@@ -9,6 +12,8 @@ const manufacturers = require('./controller/Manufacturers')
 const sellers = require('./controller/Sellers')
 const template = require('./controller/Template')
 const Template = require('./controller/Template')
+
+const clusterWorkerSize = os.cpus().length;
 
 fastify.register(require('@fastify/cors'), {
   hook: 'preHandler',
@@ -226,6 +231,13 @@ fastify.get('/getManufacturers', async (req, res) => {
   })
 })
 
+fastify.get('/getManufacturer/:manufacturer_id', async(req, res) => {
+  const Manufacturer = new manufacturers();
+  const id = req.params.manufacturer_id;
+
+  return await Manufacturer.getManufacturer(id);
+})
+
 fastify.get('/getCategories', async (req, res) => {
   const Categories = new category()
 
@@ -337,13 +349,39 @@ fastify.post('/template/updateSixBanner', (req, res) => {
 })
 
 
+// Run the server!
+const start = async () => {
+  try {
+      await fastify.listen({ port: 27015, host: '0.0.0.0' });
+      console.log(`server listening on ${fastify.server.address().port} and worker ${process.pid}`);
+  } catch (err) {
+      fastify.log.error(err);
+      process.exit(1);
+  }
+}
+
+if (clusterWorkerSize > 1) {
+  if (cluster.isMaster) {
+      for (let i=0; i < clusterWorkerSize; i++) {
+          cluster.fork();
+      }
+
+      cluster.on("exit", function(worker) {
+          console.log("Worker", worker.id, " has exited.")
+      })
+  } else {
+      start();
+  }
+} else {
+  start();
+}
 
 // Run the server!
-fastify.listen({ port: 27015, host: '0.0.0.0' }, function (err, address) {
+/*fastify.listen({ port: 27015, host: '0.0.0.0' }, function (err, address) {
   if (err) {
     fastify.log.error(err)
     process.exit(1)
   }
   // Server is now listening on ${address}
   console.log('Server started on ' + address)
-})
+})*/

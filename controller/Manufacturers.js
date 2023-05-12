@@ -9,4 +9,15 @@ module.exports = class Manufacturer extends ManufacturersModel {
             response: results
         }
     }
+
+    async getManufacturer(id){
+        if(!parseInt(id) || parseInt(id) <= 0) return {
+            error: true,
+            response: 'Geçersiz marka!'
+        }
+
+        const results = await this.getManufacturerData(parseInt(id));
+
+        return results;
+    }
 }
