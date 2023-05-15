@@ -139,7 +139,7 @@ FROM
     }
 
     if (filter['name']) {
-      sql += ` AND pd.name LIKE '%${escape(filter['name'])}'`
+      sql += ` AND pd.name LIKE '%${escape(filter['name'])}%'`
     }
     if (filter['mpn']) {
       sql += ` AND p.mpn = 1`;
@@ -191,6 +191,7 @@ FROM
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
 
+    console.log(sql)
 
     const results = await query(sql)
     let output = []
