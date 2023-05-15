@@ -172,6 +172,10 @@ module.exports = class Product extends ProductModel {
     if(query.order){
       filter['order'] = query.order
     }
+    if(query.customer_id){
+      filter['customer_id']=parseInt(query.customer_id)
+    }
+  
 
     const products = await this.getProducts(filter)
     /*

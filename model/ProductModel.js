@@ -75,9 +75,9 @@ module.exports = class ProductModel {
     let select = `SELECT DISTINCT p.product_id,pd.name, p.viewed, p.status, (
       SELECT AVG(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
   ) as rating,
+  ${filter['customer_id'] ? `(SELECT product_id FROM ys_customer_wishlist cww WHERE p.product_id = cww.product_id AND cww.customer_id = ${filter['customer_id']} LIMIT 1) as isFollowing,` : ``}
   (SELECT COUNT(w.product_id) FROM ys_customer_wishlist w WHERE w.product_id = p.product_id) as wishCount,
-  ${filter['order'] && filter['order'] == 'cartcount' ? `COUNT(wcc.product_id) as cartCount,` : '(SELECT COUNT(ww.product_id) FROM oc_cart ww WHERE ww.product_id = p.product_id) as cartCount,'}
-  ${filter['order'] && filter['order'] == 'wishcount' ? `COUNT(cw.product_id) as wishCount,` : '(SELECT COUNT(w.product_id) FROM ys_customer_wishlist w WHERE w.product_id = p.product_id) as wishCount,'}
+  (SELECT COUNT(ww.product_id) FROM oc_cart ww WHERE ww.product_id = p.product_id) as cartCount,
   (
       SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
   ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company,ps.title as product_status,
@@ -108,10 +108,11 @@ FROM
   LEFT JOIN oc_category c ON c.category_id = p.category_id
   LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
   LEFT JOIN ys_product_status ps ON ps.status_id = p.status
-  ${filter['order'] && filter['order'] == 'cartcount' ? `LEFT JOIN oc_cart wcc ON ( wcc.product_id = p.product_id)` : ''}
-  ${filter['order'] && filter['order'] == 'wishcount' ? `LEFT JOIN ys_customer_wishlist cw ON ( cw.product_id = p.product_id)` : ''}
-
+  ${filter['order'] && filter['order'] == 'cartcount' ? `INNER JOIN oc_cart wcc ON wcc.product_id = p.product_id` : ''}
+  ${filter['order'] && filter['order'] == 'wishcount' ? `INNER JOIN ys_customer_wishlist cw ON cw.product_id = p.product_id` : ''}
   WHERE 1 = 1`
+  let completed = `${select} ${sql}`;
+      
 
     if (filter['category']) {
       sql += ` AND c.category_id = ${filter['category']}`
@@ -186,10 +187,12 @@ FROM
             break;
       }
     }
-    //return {sql: sql}
+
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
+
     console.log(sql)
+
     const results = await query(sql)
     let output = []
     
@@ -197,6 +200,7 @@ FROM
 
     results.map(val => {
       output.push({
+        isFollowing: val.isFollowing && val.isFollowing ? true : false,
         product_id: parseInt(val.product_id),
         status: parseInt(val.status),
         viewed: parseInt(val.viewed),
