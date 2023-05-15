@@ -2,6 +2,11 @@ const CategoriesModel = require('../model/CategoriesModel')
 const {getCategoryIcon} = require('../helper/String')
 
 module.exports = class Categories extends CategoriesModel {
+    async getInformation(path = ''){
+        const info = await this.getCategoryInformation(path);
+
+        return info;
+    }
     async getCats(query){
         const limit = (query.limit ? query.limit : 100);
         const page = (query.page ? query.page : 1);

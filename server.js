@@ -238,6 +238,14 @@ fastify.get('/getManufacturer/:manufacturer_id', async(req, res) => {
   return await Manufacturer.getManufacturer(id);
 })
 
+fastify.get('/getCategoryInformation/:seo', async(req, res) => {
+  const Category = new category();
+
+  const results = await Category.getInformation(req.params.seo)
+
+  return results;
+})
+
 fastify.get('/getCategories', async (req, res) => {
   const Categories = new category()
 

@@ -1,6 +1,13 @@
 const { query, escape } = require('../lib/mysql')
 
 module.exports = class CategoriesModel {
+  async getCategoryInformation(path){
+    let sql = `SELECT * FROM oc_category c LEFT JOIN oc_category_description cd ON c.category_id = cd.category_id WHERE cd.seo_url = '${escape(path)}' LIMIT 1`
+
+    const results = await query(sql);
+
+    return (results[0] ? results[0] : results);
+  }
   async getCategories(filter = []) {
     let sql = `SELECT c.category_id, cd.name, cd.seo_url
         FROM oc_category c
