@@ -80,7 +80,7 @@ module.exports = class ProductModel {
   (SELECT COUNT(ww.product_id) FROM oc_cart ww WHERE ww.product_id = p.product_id) as cartCount,
   (
       SELECT COUNT(DISTINCT rate) FROM ys_product_review r WHERE r.product_id = pd.product_id
-  ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, s.seller_id, s.company,ps.title as product_status,
+  ) as total_rating, p.*, cd.category_id, cd.name as category, m.manufacturer_id, m.name as manufacturer, m.seo_url as 'manufacturer_seo', s.seller_id, s.company,ps.title as product_status,
   (SELECT DISTINCT
     (
     SELECT
@@ -111,8 +111,8 @@ FROM
   ${filter['order'] && filter['order'] == 'cartcount' ? `INNER JOIN oc_cart wcc ON wcc.product_id = p.product_id` : ''}
   ${filter['order'] && filter['order'] == 'wishcount' ? `INNER JOIN ys_customer_wishlist cw ON cw.product_id = p.product_id` : ''}
   WHERE 1 = 1`
-  let completed = `${select} ${sql}`;
-      
+    let completed = `${select} ${sql}`;
+
 
     if (filter['category']) {
       sql += ` AND c.category_id = ${filter['category']}`
@@ -166,8 +166,8 @@ FROM
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
-    } 
-    
+    }
+
     if (filter['order']) {
       switch (filter['order']) {
         case 'newest':
@@ -183,8 +183,8 @@ FROM
           sql += ` ORDER BY wishCount DESC`
           break;
         case 'viewed':
-            sql += ` ORDER BY p.viewed DESC`
-            break;
+          sql += ` ORDER BY p.viewed DESC`
+          break;
       }
     }
 
@@ -195,8 +195,8 @@ FROM
 
     const results = await query(sql)
     let output = []
-    
-    if(!results) return []
+
+    if (!results) return []
 
     results.map(val => {
       output.push({
@@ -225,6 +225,7 @@ FROM
         category_path: val.category_path,
         manufacturer_id: val.manufacturer_id,
         manufacturer: val.manufacturer,
+        manufacturer_seo: val.manufacturer_seo,
         seller_id: val.seller_id,
         seller: val.company,
         href: val.product_seo
