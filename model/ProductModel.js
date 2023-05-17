@@ -238,7 +238,7 @@ FROM
     let sql = `SELECT p.product_id, p.sku, cd.category_id, p.status, ps.title as status_name, 
     ck.cargokey, ck.title as shipping_cargo, pd.name, p.price, p.special, 
     p.seller_id, p.tax_rate, p.weight, s.company as seller, s.seo as seller_seo, 
-    p.model, p.quantity as quantity, p.image, p.mpn, p.quantity,p.manufacturer_id, m.name AS manufacturer,
+    p.model, p.quantity as quantity, p.image, p.mpn, p.quantity,p.manufacturer_id, m.name AS manufacturer,m.seo_url as 'manufacturer_seo',
      pd.description, cd.category_id, cd.name as category, cd.seo_url as category_seo,
      (SELECT AVG(rr.rate) FROM ys_product_review rr WHERE rr.product_id = p.product_id) as rate,
      (SELECT COUNT(r.rate) FROM ys_product_review r WHERE r.product_id = p.product_id) as rateCount

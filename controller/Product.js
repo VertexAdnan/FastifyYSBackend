@@ -166,16 +166,16 @@ module.exports = class Product extends ProductModel {
     if (query.seller) {
       filter['seller'] = parseIds(query.seller)
     }
-    if(query.status){
-      filter['status']=parseInt(query.status)
+    if (query.status) {
+      filter['status'] = parseInt(query.status)
     }
-    if(query.order){
+    if (query.order) {
       filter['order'] = query.order
     }
-    if(query.customer_id){
-      filter['customer_id']=parseInt(query.customer_id)
+    if (query.customer_id) {
+      filter['customer_id'] = parseInt(query.customer_id)
     }
-  
+
 
     const products = await this.getProducts(filter)
     /*
@@ -252,6 +252,7 @@ module.exports = class Product extends ProductModel {
           ? parseInt(data.manufacturer_id)
           : 0,
         manufacturer: data.manufacturer ? data.manufacturer : undefined,
+        manufacturer_seo: data.manufacturer_seo,
         description: htmlEntities(data.description),
         category: data.category,
         category_href: data.category_seo,
