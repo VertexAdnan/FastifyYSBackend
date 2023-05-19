@@ -218,16 +218,37 @@ fastify.get('/getSellers', async (req, res) => {
   return results
 })
 
+fastify.get('/seller/getInformation/:path', async (req, res) => {
+  const path = req.params.path;
+
+  const Sellers = new sellers()
+
+  const results = await Sellers.gSeller(path);
+
+  return results
+})
+
 fastify.get('/getManufacturers', async (req, res) => {
   const Manufacturer = new manufacturers()
 
-  const page = req.query.page ? parseInt(req.query.page) : 1
-  const limit = req.query.limit ? parseInt(req.query.limit) : 100
-  const name = req.query.name ? req.query.name : 0
+  const page = req.query.page ? parseInt(req.query.page) : 1;
+  const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+  const name = req.query.name ? req.query.name : 0;
+
+  const date = req.query.date ? req.query.date : 0;
+  const seller_id = req.query.seller ? parseInt(req.query.seller) : 0;
+  const manufacturer_id = req.query.manufacturer_id ? parseInt(req.query.manufacturer_id) : 0;
+  const seller = req.query.seller ? req.query.seller : 0;
+  
+  
   return await Manufacturer.getManufacturers({
     name: name,
     start: (page - 1) * limit,
-    limit: limit
+    limit: limit,
+    date: date,
+    seller: seller,
+    seller_id: seller_id,
+    manufacturer_id: manufacturer_id
   })
 })
 
@@ -236,6 +257,15 @@ fastify.get('/getManufacturer/:manufacturer_id', async(req, res) => {
   const id = req.params.manufacturer_id;
 
   return await Manufacturer.getManufacturer(id);
+})
+
+fastify.get('/manufacturer/getInformation/:path', async(req, res) => {
+  const Manufacturer = new manufacturers();
+  const path = req.params.path;
+
+  const data = await Manufacturer.getWithPath(path);
+
+  return data;
 })
 
 fastify.get('/getCategoryInformation/:seo', async(req, res) => {

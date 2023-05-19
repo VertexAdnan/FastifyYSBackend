@@ -216,7 +216,7 @@ FROM
         product_status: val.product_status,
         date_added: val.date_added,
         date_modified: val.date_modified,
-        image: "https://cdn.yapisepeti.com.tr/image/s_250,enlarge,fit_contain,background_white/wkseller/463/sgs-hi-tech-angle-grinder-avuc-taslama8698619151088-294.jpg",//generateImage(val.image),
+        image: generateImage(val.image),
         mpn: parseInt(val.mpn),
         rating: val.rating ? parseInt(val.rating) : 0,
         ratingCount: val.ratingCount ? parseInt(val.ratingCount) : 0,
