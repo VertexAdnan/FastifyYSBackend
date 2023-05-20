@@ -215,7 +215,7 @@ module.exports = class Product extends ProductModel {
 
       const options = await this.getOptions(parseInt(data.product_id))
       const images = await this.getImages(parseInt(data.product_id))
-      console.log(parseInt(data.product_id))
+      
       let productImages = []
 
       images.map(value => {
