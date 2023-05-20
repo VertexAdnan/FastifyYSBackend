@@ -191,7 +191,6 @@ FROM
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
 
-    console.log(sql)
 
     const results = await query(sql)
     let output = []
@@ -251,7 +250,8 @@ FROM
     LEFT JOIN ys_cargokeys ck ON ck.cargokey = sss.cargokey
     LEFT JOIN ys_product_status ps ON ps.status_id = p.status`
 
-    if (parseInt(param) && parseInt(param) != 0) {
+    //if (parseInt(param) && parseInt(param) != 0) {
+    if(param.length == 6){
       sql += ` WHERE p.product_id = ${parseInt(param)}`
     } else {
       sql += ` WHERE p.product_seo = '${escape(param)}'`
