@@ -92,14 +92,14 @@ module.exports = class ProductModel {
         cp.category_id = c.category_id 
     GROUP BY
         cp.category_id 
-    ) AS path`
-
-    let sql = `${select}
-FROM
+    ) AS path
+    FROM
     oc_category c
     LEFT JOIN oc_category_description cd2 ON ( c.category_id = cd2.category_id )
     LEFT JOIN ys_commission_category cc ON (cc.category_id = c.parent_id )
-    WHERE c.category_id IS NOT NULL AND c.category_id=p.category_id LIMIT 1) as 'category_path'
+    WHERE c.category_id IS NOT NULL AND c.category_id=p.category_id LIMIT 1) as 'category_path'`
+
+    let sql = `${select}
   FROM ys_product p 
   LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
   LEFT JOIN oc_category_description cd ON p.category_id = cd.category_id
@@ -111,62 +111,85 @@ FROM
   ${filter['order'] && filter['order'] == 'cartcount' ? `INNER JOIN oc_cart wcc ON wcc.product_id = p.product_id` : ''}
   ${filter['order'] && filter['order'] == 'wishcount' ? `INNER JOIN ys_customer_wishlist cw ON cw.product_id = p.product_id` : ''}
   WHERE 1 = 1`
-    let completed = `${select} ${sql}`;
-
+    let completed = `SELECT count(DISTINCT p.product_id) as count   FROM ys_product p 
+    LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
+    LEFT JOIN oc_category_description cd ON p.category_id = cd.category_id
+    LEFT JOIN ys_seller s ON s.seller_id = p.seller_id
+    LEFT JOIN oc_manufacturer m ON m.manufacturer_id = p.manufacturer_id
+    LEFT JOIN oc_category c ON c.category_id = p.category_id
+    LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id
+    LEFT JOIN ys_product_status ps ON ps.status_id = p.status
+    WHERE 1 = 1`;
 
     if (filter['category']) {
       sql += ` AND c.category_id = ${filter['category']}`
+      completed += ` AND c.category_id = ${filter['category']}`
     }
 
     if (filter['category_ids'] && !filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
+      completed += ` AND c.category_id IN(${filter['category_ids']})`
     }
 
     if (filter['path']) {
       sql += ` AND cp.path_id IN (${filter['path']})`
+      completed += ` AND cp.path_id IN (${filter['path']})`
     }
 
     if (filter['manufacturer'] && !filter['categoryOrManufcaturer']) {
       sql += ` AND p.manufacturer_id IN (${filter['manufacturer']})`
+      completed += ` AND p.manufacturer_id IN (${filter['manufacturer']})`
     }
 
     if (filter['product_ids']) {
       sql += ` AND p.product_id IN (${filter['product_ids']})`
+      completed += ` AND p.product_id IN (${filter['product_ids']})`
     }
 
     if (filter['seller']) {
       sql += ` AND s.seller_id IN (${filter['seller']})`
+      completed += ` AND s.seller_id IN (${filter['seller']})`
     }
 
     if (filter['name']) {
       sql += ` AND pd.name LIKE '%${escape(filter['name'])}%'`
+      completed += ` AND pd.name LIKE '%${escape(filter['name'])}%'`
     }
     if (filter['mpn']) {
       sql += ` AND p.mpn = 1`;
+      completed += ` AND p.mpn = 1`;
     }
     if (filter['image']) {
       if (filter['image'] == 0) {
         sql += ` AND (p.image IS NULL OR p.image='')`;
+        completed += ` AND (p.image IS NULL OR p.image='')`;
       } else {
         sql += ` AND (p.image IS NOT NULL OR p.image != '')`
+        completed += ` AND (p.image IS NOT NULL OR p.image != '')`
       }
     }
     if ((filter['quantity'])) {
       sql += ` AND p.quantity=${(filter['quantity'])}`;
+      completed += ` AND p.quantity=${(filter['quantity'])}`;
     }
     if (filter['price']) {
       sql += ` AND (p.price=${filter['price']} OR p.special=${filter['price']})`;
+      completed += ` AND (p.price=${filter['price']} OR p.special=${filter['price']})`;
     }
     if (filter['sellername']) {
       sql += ` AND s.company LIKE '%${escape(filter['sellername'])}%'`;
+      completed += ` AND s.company LIKE '%${escape(filter['sellername'])}%'`;
     }
     if (filter['status']) {
       sql += ` AND p.status=${(filter['status'])}`;
+      completed += ` AND p.status=${(filter['status'])}`;
     }
     if (filter['categoryOrManufcaturer']) {
       sql += ` AND c.category_id IN(${filter['category_ids']})`
       sql += ` OR p.manufacturer_id IN (${filter['manufacturer']})`
     }
+
+    const productCount = await query(completed);
 
     if (filter['order']) {
       switch (filter['order']) {
@@ -190,6 +213,7 @@ FROM
 
 
     sql += ` LIMIT ${filter['start']}, ${filter['limit']}`
+    completed += ` LIMIT 1000`
 
 
     const results = await query(sql)
@@ -230,7 +254,11 @@ FROM
         href: val.product_seo
       })
     })
-    return output
+
+    return {
+      count: (productCount && productCount[0].count ? productCount[0].count : 0),
+      products: output
+    }
   }
 
   async getProduct(param) {
@@ -240,7 +268,8 @@ FROM
     p.model, p.quantity as quantity, p.image, p.mpn, p.quantity,p.manufacturer_id, m.name AS manufacturer,m.seo_url as 'manufacturer_seo',
      pd.description, cd.category_id, cd.name as category, cd.seo_url as category_seo,
      (SELECT AVG(rr.rate) FROM ys_product_review rr WHERE rr.product_id = p.product_id) as rate,
-     (SELECT COUNT(r.rate) FROM ys_product_review r WHERE r.product_id = p.product_id) as rateCount
+     (SELECT COUNT(r.rate) FROM ys_product_review r WHERE r.product_id = p.product_id) as rateCount,
+     (SELECT AVG(sr.rate) FROM ys_seller_review sr WHERE p.seller_id = sr.seller_id) as sellerRate
      FROM ys_product p
     LEFT JOIN ys_product_description pd ON pd.product_id = p.product_id
     LEFT JOIN oc_category_description cd ON cd.category_id = p.category_id

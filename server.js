@@ -71,6 +71,15 @@ fastify.register(require('@fastify/cors'), {
   }
 })
 
+fastify.get('/areacodes', async(req, res) => {
+  const codes = [	501, 505, 506, 550, 507, 516, 551, 552, 553, 554, 555, 559, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 561, 541, 542, 543, 544, 545, 546, 547, 548, 549, 54285, 54286, 54287, 54288, 54881, 54882, 54883, 54884, 54885, 54886, 54887, 54888, 54889, 54699, 	53383, 53384, 53385, 53386, 53387];
+  codes.sort( (a, b) => {
+    return a-b;
+  })
+
+  return codes;
+})
+
 fastify.get('/sessionset', async (req, res) => {
   const { redis } = fastify
 
@@ -211,21 +220,17 @@ fastify.get('/getProductsCookieCategory', async (req, res) => {
   let paths = await redis.get('paths')
 
   let results
-
+  const Products = new getProduct()
   if (paths) {
     while (paths[paths.length - 1] == ',') {
       paths = paths.slice(0, -1)
     }
-
-    const Products = new getProduct()
     results = await Products.getP({
       category_ids: paths
     })
-
-    return results
   } else {
     console.log('Cookie yok!')
-    results = await products.getProductsMisc('topsold')
+    results = await Products.getProductsMisc('topsold')
   }
 
   return results
@@ -236,21 +241,19 @@ fastify.get('/getProductsCookieProducts', async (req, res) => {
   let product_ids = await redis.get('products')
 
   let results
-
+  const Products = new getProduct()
   if (product_ids) {
     while (product_ids[product_ids.length - 1] == ',') {
       product_ids = product_ids.slice(0, -1)
     }
 
-    const Products = new getProduct()
     results = await Products.getP({
       product_ids: product_ids
     })
 
-    return results
   } else {
     console.log('Cookie yok!')
-    results = await products.getProductsMisc('mostviewed')
+    results = await Products.getProductsMisc('mostviewed')
   }
 
   return results
@@ -510,7 +513,7 @@ fastify.post('/template/updateSixBanner', (req, res) => {
 // Run the server!
 const start = async () => {
   try {
-    await fastify.listen({ port: 27016, host: '0.0.0.0' })
+    await fastify.listen({ port: 27015, host: '0.0.0.0' })
     console.log(
       `server listening on ${fastify.server.address().port} and worker ${
         process.pid

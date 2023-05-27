@@ -1,5 +1,6 @@
 const { query, escape } = require('../lib/mysql')
 const ProductModel = require('./ProductModel')
+const filterModel = require('./FilterModel')
 
 const { parseIds } = require('../helper/String')
 
@@ -10,6 +11,7 @@ module.exports = class TemplateModel {
 
         let bannerData = {}
         const productmodel = new ProductModel()
+
 
         await Promise.all(
             banners.map(async val => {
@@ -266,7 +268,12 @@ module.exports = class TemplateModel {
         let limit = 20
         let start = (page - 1) * limit
 
+
+        const FilterModel = new filterModel()
+
+
         let products = []
+        let filters = [];
 
         switch (filter['seo']) {
             case 'kupon-yagmuru':
@@ -293,6 +300,9 @@ module.exports = class TemplateModel {
                     start: start,
                     limit: limit
                 })
+
+                filters = await FilterModel.getFilterMisc(parseIds(mids), parseIds(cids));
+
                 break
             case 'kargo-bedava':
                 let freeShippingIds = await productModel.getProductFreeShipping(
@@ -309,6 +319,8 @@ module.exports = class TemplateModel {
                     start: start,
                     limit: limit
                 })
+
+                filters = await FilterModel.getFilterMisc(0, 0, pids, 0);
                 break
             case 'hizli-kargo':
                 products = await productModel.getProducts({
@@ -320,6 +332,7 @@ module.exports = class TemplateModel {
         }
         return {
             pageInfo: await this.getTripleBanner(filter['seo']),
+            filter: filters,
             products: products
         }
     }

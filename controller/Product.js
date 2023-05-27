@@ -202,9 +202,7 @@ module.exports = class Product extends ProductModel {
           })
         })
     */
-    return {
-      products: products
-    }
+    return products;
   }
   async getProd(param) {
 
@@ -258,6 +256,7 @@ module.exports = class Product extends ProductModel {
         category_href: data.category_seo,
         rate: data.rate ? parseInt(data.rate) : 0,
         rateCount: data.rateCount ? parseInt(data.rateCount) : 0,
+        sellerRate: data.sellerRate ? parseInt(data.sellerRate) : 0,
         options: options
       }
 
