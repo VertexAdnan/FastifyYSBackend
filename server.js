@@ -252,9 +252,21 @@ fastify.post('/template/updateTitles', async (req, res) => {
 })
 
 fastify.get('/template/getSliders', async (req, res) => {
+  const {redis} = fastify
+
+  let cacheKey = `TemplategetSliders${req.query}`;
+
+  const cached = await redis.get(cacheKey);
+
+  if(cached){
+    return cached;
+  }
+
   const Template = new template()
 
   const data = await Template.sliders(req.query)
+
+  redis.set(cacheKey, JSON.stringify(data));
 
   return data
 })
