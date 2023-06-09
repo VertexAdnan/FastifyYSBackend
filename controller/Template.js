@@ -1,6 +1,16 @@
 const TemplateModel = require('../model/TemplateModel')
 
 module.exports = class Template extends TemplateModel {
+  async getAcademyGroups(){
+    const results = await this.AcademyGroups();
+
+    return results;
+  }
+  async getAcademyContent(){
+    const results = await this.AcademyContent();
+    
+    return results;
+  }
   async getHomePageCategories() {
     return this.getCategories();
   }

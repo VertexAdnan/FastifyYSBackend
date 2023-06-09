@@ -3,9 +3,22 @@ const { query, escape } = require('../lib/mysql')
 module.exports = class CategoriesModel {
   async getCategoryInformation(path){
     let sql = `SELECT * FROM oc_category c LEFT JOIN oc_category_description cd ON c.category_id = cd.category_id WHERE cd.seo_url = '${escape(path)}' LIMIT 1`
-
     const results = await query(sql);
 
+    if(!results[0].category_id){
+      return []
+    }
+
+    let breadSql = `SELECT c.category_id, cd.name, cd.seo_url FROM oc_category c LEFT JOIN oc_category_description cd ON c.category_id = cd.category_id LEFT JOIN oc_category_path cp ON c.category_id = cp.category_id WHERE cp.path_id = ${results[0].category_id} AND c.category_id != ${results[0].category_id} ORDER BY c.category_id ASC `;
+
+    let parentBread = `SELECT cd.category_id, cd.name, cd.seo_url FROM oc_category_path cp LEFT JOIN oc_category_description cd ON cd.category_id = cp.path_id WHERE cp.category_id = ${results[0].category_id} AND cd.category_id != ${results[0].category_id} ORDER BY level DESC LIMIT 1`
+
+    const breadcumbs = await query(breadSql);
+    const parent = await query(parentBread);
+
+    results[0]['breadcumbs'] = breadcumbs;
+    results[0]['parent_bread'] = parent ? parent[0] : {};
+    
     return (results[0] ? results[0] : results);
   }
   async getCategories(filter = []) {
@@ -59,6 +72,10 @@ module.exports = class CategoriesModel {
 
     if (filter['category_id']) {
       sql += ` AND c.parent_id = '${filter['category_id']}'`
+    }
+
+    if (filter['path_id']) {
+      sql += ` AND c.parent_id IN (SELECT category_id FROM oc_category_path cpp2 WHERE cpp2.path_id = ${filter['path_id']})`
     }
 
     sql += `    ORDER BY c.parent_id ASC

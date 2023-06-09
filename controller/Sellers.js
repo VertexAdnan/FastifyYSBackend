@@ -5,7 +5,7 @@ module.exports = class Sellers extends SellerModel {
         return await this.getSellers(filter);
     }
 
-    async gSeller(path){
-        return await this.getSeller(path);
+    async gSeller(path, customer_id = 0){
+        return await this.getSeller(path, customer_id);
     }
 }

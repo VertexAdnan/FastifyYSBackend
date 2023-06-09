@@ -10,6 +10,11 @@ const ProductModel = require('../model/ProductModel')
 const CategoryModel = require('../model/CategoriesModel')
 
 module.exports = class Product extends ProductModel {
+  async getProductSellerListing(filter = []){
+    const products = this.partnerListing(filter);
+
+    return products;
+  }
   async getProductReviews(product_id) {
     const results = await this.getReviewsAll(product_id)
 
@@ -176,6 +181,14 @@ module.exports = class Product extends ProductModel {
       filter['customer_id'] = parseInt(query.customer_id)
     }
 
+    if(query.manufacturer_name){
+      filter['manufacturer_name'] = query.manufacturer_name
+    }
+
+    if(query.wishlist){
+      filter['wishlist'] = query.wishlist
+    }
+
 
     const products = await this.getProducts(filter)
     /*
@@ -202,9 +215,7 @@ module.exports = class Product extends ProductModel {
           })
         })
     */
-    return {
-      products: products
-    }
+    return products;
   }
   async getProd(param) {
 
@@ -258,6 +269,8 @@ module.exports = class Product extends ProductModel {
         category_href: data.category_seo,
         rate: data.rate ? parseInt(data.rate) : 0,
         rateCount: data.rateCount ? parseInt(data.rateCount) : 0,
+        sellerRate: data.sellerRate ? parseInt(data.sellerRate) : 0,
+        href: data.product_seo ? data.product_seo : 0,
         options: options
       }
 
