@@ -49,13 +49,15 @@ module.exports = class Categories extends CategoriesModel {
         const start = (page - 1) * limit;
         const name = (query.name ? query.name : 0)
         const category_id = (query.category_id ? query.category_id : 0)
+        const path_id = (query.path_id ? query.path_id : 0)
 
         const data = await this.getPathList({
             limit: limit,
             page: page,
             start: start,
             name: name,
-            category_id: category_id
+            category_id: category_id,
+            path_id: path_id
         });
 
         if(!data) return {}
