@@ -26,4 +26,8 @@ module.exports = class Filter extends FilterModel {
             categories: await this.getCategoriesManufacturer(manufacturer_id)
         }
     }
+
+    async filterWishlist(customer_id){
+        return await this.getFilterWishlist(customer_id);
+    }
 }

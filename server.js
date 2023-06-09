@@ -100,6 +100,22 @@ fastify.get('/', function (request, reply) {
 })
 
 // TEMPLATE ROUTES
+fastify.get('/template/academy/getGroups', async(req, res) => {
+  const Template = new template();
+
+  const results = await Template.getAcademyGroups();
+
+  return results;
+})
+
+fastify.get('/template/academy/getContent', async(req, res) => {
+  const Template = new template();
+
+  const results = await Template.getAcademyContent();
+  
+  return results;
+})
+
 fastify.get('/template/getHomeCategories', async (req, res) => {
   const Template = new template()
 
@@ -299,6 +315,8 @@ fastify.get('/getProduct/:param', async (req, res) => {
   return productData
 })
 
+
+
 fastify.get('/getProductsSpecial/:type', async (req, res) => {
   const products = new getProduct()
 
@@ -325,6 +343,13 @@ fastify.get('/product/reviews/:product_id', async (req, res) => {
   return reviews
 })
 
+fastify.get('/seller/getProductsListing', async(req, res) => {
+  const product = new getProduct();
+  const results = await product.getProductSellerListing(req.query);
+
+  return results;
+})
+
 fastify.get('/getSellers', async (req, res) => {
   const limit = req.query.limit ? parseInt(req.query.limit) : 100
   const page = req.query.page ? parseInt(req.query.page) : 1
@@ -344,10 +369,11 @@ fastify.get('/getSellers', async (req, res) => {
 
 fastify.get('/seller/getInformation/:path', async (req, res) => {
   const path = req.params.path
+  const customer_id = (req.query.customer_id ? parseInt(req.query.customer_id) : 0);
 
   const Sellers = new sellers()
 
-  const results = await Sellers.gSeller(path)
+  const results = await Sellers.gSeller(path, customer_id)
 
   return results
 })
@@ -460,6 +486,14 @@ fastify.get('/getFilterSeller', async (req, res) => {
     }
 
   const results = await Filter.getFilterSeller(req.query.seller_id)
+
+  return results
+})
+
+fastify.get('/getFilterWishlist/:customer_id', async (req, res) => {
+  const Filter = new filter()
+
+  const results = await Filter.filterWishlist(req.params.customer_id)
 
   return results
 })
