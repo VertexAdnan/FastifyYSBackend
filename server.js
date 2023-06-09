@@ -5,7 +5,7 @@ const fastify = require('fastify')({
   logger: false
 })
 
-const fastifyCookie = require('fastify-cookie')
+const fastifyCookie = require('@fastify/cookie')
 const { RedisStore } = require('@mgcrea/fastify-session-redis-store')
 const fastifySession = require('@mgcrea/fastify-session')
 const Redis = require('ioredis')
@@ -24,31 +24,10 @@ const Template = require('./controller/Template')
 
 const clusterWorkerSize = os.cpus().length
 
-/*fastify.register(fastifyCookie);
-fastify.register(fastifySession, {
-  store: new RedisStore({ client: new Redis('redis://localhost/'), ttl: SESSION_TTL }),
-  secret: "abcdefghjrtrwdfdvcxvdsfsefsdfsefqa",
-  cookie: { maxAge: SESSION_TTL },
-  secure: true,
-  saveUninitialized: true,
-  name: 'YAPISEPETI',
-
-});*/
-
-// create by specifying host
-//fastify.register(require('@fastify/redis'), { host: '127.0.0.1' })
-
 // OR by specifying Redis URL
 fastify.register(require('@fastify/redis'), {
   url: 'redis://127.0.0.1' /* other redis options */
 })
-
-// OR with more options
-/*fastify.register(require('@fastify/redis'), { 
-  host: '127.0.0.1', 
-  port: 6379, // Redis port
-  family: 4   // 4 (IPv4) or 6 (IPv6)
-})*/
 
 fastify.register(require('@fastify/cors'), {
   hook: 'preHandler',
@@ -80,9 +59,30 @@ fastify.get('/sessionset', async (req, res) => {
 
 fastify.get('/session', async (req, res) => {
   const { redis } = fastify
-  //redis.set('paths', null)
   const test = await redis.get('paths')
   return { get: test }
+})
+
+fastify.get('/cache', async (req, res) => {
+  const { redis } = fastify
+
+  const cached = await redis.get('cached')
+  if (cached) {
+    console.log(cached)
+    return cached
+  }
+  const data = [
+    {
+      id: 1,
+      name: 'trueee'
+    },
+    {
+      id: 2,
+      name: 'falseeee'
+    }
+  ]
+  redis.set('cached', JSON.stringify(data))
+  return data
 })
 
 // Declare a route
@@ -92,42 +92,72 @@ fastify.get('/', function (request, reply) {
 
 // TEMPLATE ROUTES
 fastify.get('/template/getHomeCategories', async (req, res) => {
+  const { redis } = fastify
+  const cached = await redis.get('getHomeCategories')
+  if (cached) {
+    return cached
+  }
+
   const Template = new template()
 
   const results = await Template.getHomePageCategories()
-
+  redis.set('getHomeCategories', JSON.stringify(results))
   return results
 })
 
 fastify.get('/template/extrasBanners', async (req, res) => {
+  const { redis } = fastify
+  const cached = await redis.get('extrasBanners')
+  if (cached) {
+    return cached
+  }
+
   const Template = new template()
 
   const results = await Template.getExtraPages()
-
+  redis.set('extrasBanners', JSON.stringify(results))
   return results
 })
 
 fastify.get('/template/extrasSpecials', async (req, res) => {
+  const { redis } = fastify
+  const cached = await redis.get('extrasSpecials')
+  if (cached) {
+    return cached
+  }
+
   const Template = new template()
 
   const results = await Template.getExtrasSpecials(req.query)
-
+  redis.set('extrasSpecials', JSON.stringify(results))
   return results
 })
 
 fastify.get('/template/extrasShippingFree', async (req, res) => {
+  const { redis } = fastify
+  const cached = await redis.get('extrasShippingFree')
+  if (cached) {
+    return cached
+  }
+
   const Template = new template()
 
   const results = await Template.getExtrasShippingFree(req.body)
-
+redis.set('extrasShippingFree', JSON.stringify(results))
   return results
 })
 
 fastify.get('/template/smileInBasket', async (req, res) => {
+  const { redis } = fastify
+  const cached = await redis.get('smileInBasket')
+  if (cached) {
+    return cached
+  }
+
   const Template = new template()
 
   const results = await Template.smileInBasket(req.body)
-
+redis.set('smileInBasket', JSON.stringify(results))
   return results
 })
 
@@ -266,9 +296,19 @@ fastify.get('/getProducts', async (req, res) => {
     redis.set('paths', `${req.query.path},${oldPath}`)
   }
 
-  const product = new getProduct()
+  let cacheKey = `getProducts${JSON.stringify(req.query)}`;
+  const cached = await redis.get(cacheKey)
 
-  return await product.getP(req.query)
+  if(cached){
+    return JSON.parse(cached);
+  }
+
+  const product = new getProduct()
+  const results = await product.getP(req.query);
+
+  redis.set(cacheKey, JSON.stringify(results));
+
+  return results; 
 })
 
 fastify.get('/getProductsAdmin', async (req, res) => {
@@ -297,11 +337,23 @@ fastify.get('/getProduct/:param', async (req, res) => {
 })
 
 fastify.get('/getProductsSpecial/:type', async (req, res) => {
-  const products = new getProduct()
-
   const page = req.query.page ? parseInt(req.query.page) : 1
   const limit = req.query.limit ? parseInt(req.query.limit) : 20
-  return await products.getProductsMisc(req.params.type, page, limit)
+  const { redis } = fastify
+
+  let cacheKey = `getProductsSpecial${req.params.type}${page}${limit}`;
+  const cached = await redis.get(cacheKey);
+
+  if(cached){
+    return cached;
+  }
+
+  const products = new getProduct()
+  const results = await products.getProductsMisc(req.params.type, page, limit);
+
+  redis.set(cacheKey, JSON.stringify(results))
+
+  return results;
 })
 
 fastify.get('/product/getQuestions/:product_id', async (req, res) => {
@@ -478,17 +530,43 @@ fastify.post('/addProduct', (req, res) => {
   return product.addP(data)
 })
 
-fastify.get('/template/getTripleBanner', (req, res) => {
+fastify.get('/template/getTripleBanner', async(req, res) => {
+  const {redis} = fastify;
+
+  let cacheKey = `getTripleBannerNoSlug${JSON.stringify(req.query)}`;
+  const cached = await redis.get(cacheKey)
+
+  if(cached){
+    return cached;
+  }
+
   const template = new Template()
-  return template.getTripleBanners(req.query)
+
+  const results = await template.getTripleBanners(req.query);
+
+  cache.set(cacheKey, JSON.stringify(results));
+
+  return results;
 })
-fastify.get('/template/getTripleBannerItems/:seo', (req, res) => {
+fastify.get('/template/getTripleBannerItems/:seo', async (req, res) => {
+  const {redis} = fastify;
+
+  let cacheKey = `getTripleBannerSlug${JSON.stringify(req.query)}`;
+  const cached = await redis.get(cacheKey)
+
+  if(cached){
+    return cached;
+  }
+
   const template = new Template()
   let filter = req.query ? req.query : []
 
   filter.seo = req.params.seo
 
-  const results = template.getTripleBannerItems(filter)
+  const results = await template.getTripleBannerItems(filter)
+
+  redis.set(cacheKey, JSON.stringify(results));
+
   return results
 })
 fastify.post('/template/updateTripleBanner', (req, res) => {
