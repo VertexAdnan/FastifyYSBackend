@@ -5,14 +5,14 @@ const filterModel = require('./FilterModel')
 const { parseIds } = require('../helper/String')
 
 module.exports = class TemplateModel {
-  async AcademyGroups () {
-    let sql = `SELECT * FROM ys_academy_groups ORDER BY sort ASC`
+  async AcademyGroupsPartner () {
+    let sql = `SELECT * FROM ys_academy_groups_partner ORDER BY sort ASC`
     const results = await query(sql, 2)
 
     return results
   }
-  async AcademyContent () {
-    let sql = `SELECT ag.group_id, ag.name, ag.sort as group_sort, ac.content_id, ac.content, ac.sort as content_sort, ac.type FROM ys_academy_groups ag LEFT JOIN ys_academy_content ac ON ag.group_id = ac.group_id ORDER BY ag.sort, ac.sort ASC`
+  async AcademyContentPartner () {
+    let sql = `SELECT ag.group_id, ac.title, ag.name, ag.sort as group_sort, ac.content_id, ac.content, ac.sort as content_sort, ac.type FROM ys_academy_groups_partner ag LEFT JOIN ys_academy_content_partner ac ON ag.group_id = ac.group_id ORDER BY ag.sort, ac.sort ASC`
 
     const results = await query(sql, 2)
 
@@ -20,9 +20,33 @@ module.exports = class TemplateModel {
 
     await Promise.all(
       results.map(val => {
-        if (!output[val.name]) output[val.name] = []
+        if (!output[val.group_id]) output[val.group_id] = []
 
-        output[val.name].push(val)
+        output[val.group_id].push(val)
+      })
+    )
+
+    return output
+  }
+
+  async AcademyGroups () {
+    let sql = `SELECT * FROM ys_academy_groups ORDER BY sort ASC`
+    const results = await query(sql, 2)
+
+    return results
+  }
+  async AcademyContent () {
+    let sql = `SELECT ag.group_id, ac.title, ag.name, ag.sort as group_sort, ac.content_id, ac.content, ac.sort as content_sort, ac.type FROM ys_academy_groups ag LEFT JOIN ys_academy_content ac ON ag.group_id = ac.group_id ORDER BY ag.sort, ac.sort ASC`
+
+    const results = await query(sql, 2)
+
+    let output = {}
+
+    await Promise.all(
+      results.map(val => {
+        if (!output[val.group_id]) output[val.group_id] = []
+
+        output[val.group_id].push(val)
       })
     )
 
@@ -58,11 +82,13 @@ module.exports = class TemplateModel {
   }
 
   async extraPages () {
-    let sql = `SELECT
+    /*let sql = `SELECT
         ( SELECT banner FROM ys_extras_specials LIMIT 1 ) AS banner_3,
         ( SELECT banner FROM ys_smile_in_basket_page LIMIT 1 ) AS banner_2,
         ( SELECT banner FROM ys_extra_page LIMIT 1 ) AS banner_1,
-        ( SELECT banner FROM ys_extras_shipping_free LIMIT 1 ) AS banner_4`
+        ( SELECT banner FROM ys_extras_shipping_free LIMIT 1 ) AS banner_4`*/
+
+    let sql = `SELECT title,image,link FROM ys_main_special_pages ORDER BY sort ASC`
 
     const results = await query(sql, 2)
 
@@ -198,11 +224,11 @@ module.exports = class TemplateModel {
     }
   }
   async getSpecialPage (filter = []) {
-    let sql = `SELECT msp.*, spi.item_id, spi.value, spi.url, ppt.type_id, ppt.type FROM ys_main_special_pages msp
+    let sql = `SELECT msp.*, spi.item_id, spi.value, spi.link, ppt.type_id, ppt.type FROM ys_main_special_pages msp
         LEFT JOIN ys_special_pages_items spi ON spi.page_id = msp.page_id
         LEFT JOIN ys_special_pages_types ppt ON ppt.type_id = spi.type_id
-        WHERE spi.page_id = '${filter['page_id']}'
-        OR msp.link = '${filter['page_id']}'`
+        WHERE spi.page_id = '${escape(filter['page_id'])}'
+        OR msp.link = '${escape(filter['link'])}'`
 
     const results = await query(sql, 2)
 
@@ -217,7 +243,7 @@ module.exports = class TemplateModel {
         products: [],
         banners: []
       }
-
+       
     results.map(val => {
       if (val.type == 'Product') product_ids += `${val.value},`
       if (val.type == 'Manufacturer') manufacturer_ids += `${val.value},`
@@ -225,7 +251,10 @@ module.exports = class TemplateModel {
       if (val.type == 'Seller') seller_ids += `${val.value};`
 
       if (val.type == 'Banner') {
-        banners.push(val.value)
+        banners.push({
+          img: val.value,
+          link: (val.link ? val.link : 'yapisepeti/' + filter['page_id'])
+        })
       }
     })
 
@@ -239,7 +268,10 @@ module.exports = class TemplateModel {
       seller: seller_ids.length > 0 ? parseIds(seller_ids) : false
     })
 
+    const page = await query(`SELECT * FROM ys_main_special_pages WHERE link = '${escape(filter['page_id'])}'`, 2)
+
     return {
+      page: page ? page[0] : false,
       products: products,
       banners: banners
     }
@@ -342,17 +374,17 @@ module.exports = class TemplateModel {
         }
 
         products = await productModel.getProducts({
-          manufacturer: parseIds(mids),
-          category_ids: parseIds(cids),
+          manufacturer: mids ? parseIds(mids) : 0,
+          category_ids: cids ? parseIds(cids) : 0,
           categoryOrManufcaturer: true,
           start: start,
           limit: limit
         })
 
-        /*filters = await FilterModel.getFilterMisc(
+        filters = await FilterModel.getFilterMisc(
           parseIds(mids),
           parseIds(cids)
-        )*/
+        )
 
         break
       case 'kargo-bedava':
@@ -381,6 +413,8 @@ module.exports = class TemplateModel {
         })
         break
     }
+
+    
     return {
       pageInfo: await this.getTripleBanner(filter['seo']),
       filter: filters,

@@ -116,6 +116,22 @@ fastify.get('/template/academy/getContent', async(req, res) => {
   return results;
 })
 
+fastify.get('/template/academy/getGroupsPartner', async(req, res) => {
+  const Template = new template();
+
+  const results = await Template.getAcademyGroupsPartner();
+
+  return results;
+})
+
+fastify.get('/template/academy/getContentPartner', async(req, res) => {
+  const Template = new template();
+
+  const results = await Template.getAcademyContentPartner();
+  
+  return results;
+})
+
 fastify.get('/template/getHomeCategories', async (req, res) => {
   const { redis } = fastify
   const cached = await redis.get('getHomeCategories')
@@ -133,7 +149,7 @@ fastify.get('/template/getHomeCategories', async (req, res) => {
 fastify.get('/template/extrasBanners', async (req, res) => {
   const { redis } = fastify
   const cached = await redis.get('extrasBanners')
-  if (cached) {
+  if (!cached) {
     return cached
   }
 
@@ -219,10 +235,21 @@ fastify.get('/template/extraPage', async (req, res) => {
 })
 
 fastify.get('/template/getSpecialPage/:page', async (req, res) => {
-  const Template = new template()
+  const {redis} = fastify;
   let d = req.params.page
+  let cacheKey = `${'getSpecialPage'}${d}`
+
+  const cached = await redis.get(cacheKey)
+
+  /*if(!cached){
+    return cached;
+  }*/
+
+  const Template = new template()
 
   const results = Template.getSpecialPageData(d)
+
+  redis.set(cacheKey, JSON.stringify(results));
 
   return results
 })
@@ -258,8 +285,8 @@ fastify.get('/template/getSliders', async (req, res) => {
 
   const cached = await redis.get(cacheKey);
 
-  if(cached){
-    return cached;
+  if(!cached){
+    //return cached;
   }
 
   const Template = new template()
@@ -593,7 +620,7 @@ fastify.get('/template/getTripleBanner', async(req, res) => {
 
   const results = await template.getTripleBanners(req.query);
 
-  cache.set(cacheKey, JSON.stringify(results));
+  redis.set(cacheKey, JSON.stringify(results));
 
   return results;
 })

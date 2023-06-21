@@ -1,6 +1,17 @@
 const TemplateModel = require('../model/TemplateModel')
 
 module.exports = class Template extends TemplateModel {
+  async getAcademyGroupsPartner(){
+    const results = await this.AcademyGroupsPartner();
+
+    return results;
+  }
+  async getAcademyContentParner(){
+    const results = await this.AcademyContentParner();
+    
+    return results;
+  }
+
   async getAcademyGroups(){
     const results = await this.AcademyGroups();
 
@@ -16,7 +27,7 @@ module.exports = class Template extends TemplateModel {
   }
   async getExtraPages() {
     const results = await this.extraPages()
-
+    return results;
     return [
       {
         banner: results[0].banner_1,
